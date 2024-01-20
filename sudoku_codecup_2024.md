@@ -61,7 +61,7 @@ search(node, sqv):
      if node.childCount[sqv2] == 1:
         sqv2 is a direct win!
         return "WIN"
-  children = list(sqv with node.childCount[sqv] > 1)
+  children = list(sqv with node.childCount[sqv] > 1 and node.childCount[sqv] < node.nrSolutions)
   sort children, lowest childCount first
   for sqv2 in children:
      result = search(childNode, sqv2)
@@ -74,12 +74,13 @@ search(node, sqv):
 Then there are many optimizations:
 - a transposition table is used to detect that we reach the same position from different move orderings or moves.
   Two different moves can lead to the same position in sudoku, so the hash key of a position is based on the squares that have been solved.
-- children with child counts 2, 3, 5 always lose, so do not have to be evaluated
+- children with child counts 2, 3, 5 always lose, so these do not have to be evaluated
 - if we test move A, and find that it loses because the opponent can make move B, then there is no need to test move B, because it will lose (opponent will move A and win).
   This optimization works only A's child count <= B's child count, otherwise it can happen that B also wins directly in "our" node.
 - if we test move A, and by making this move, square/value combination B is solved, and B has the same child count as A, then A and B will lead to identical positions,
   so there is not need to test B
 - many small optimizations to make the updating of nodes (calculating child counts etc) faster
+- special code for quickly evaluating nodes with 4 solutions left, which is the most common situation in the search tree.
 
 ## Game phases
 
@@ -93,7 +94,7 @@ First 8 moves: make a random move.
 by testing moves that remove most candidates from the current position:
 
 - Make a list of all legal moves
-- Sort this list based on the total number of candidates in the position that results after making this move
+- Sort this list based on the total number of candidates (sum of candidates for each square) in the position that results after making this move
 - Take the move A with least candidates, perform move A, and generate all solutions, up to max 10 000 solutions
 - If there were >= 10 000 solutions: make the move with most candidates
 - < 10 000 solutions: do a solution search for move A. If we are lucky, A wins
